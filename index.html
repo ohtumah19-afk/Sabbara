@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>متجر صَبّارة | عالم الصبار الطبيعي</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body { font-family: 'Tajawal', sans-serif; }
+    
+    @keyframes growCactus {
+      0% { transform: scale(0) translateY(40px); opacity: 0; }
+      40% { transform: scale(0.6) translateY(20px); opacity: 1; }
+      80% { transform: scale(1.08) translateY(-5px); }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    @keyframes bloomFlower {
+      0%, 70% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes potWiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-2deg); }
+      75% { transform: rotate(2deg); }
+    }
+    .animate-cactus { animation: growCactus 3.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+    .animate-flower { animation: bloomFlower 4.2s ease-out forwards; }
+    .animate-pot { animation: potWiggle 3.5s ease-in-out; }
+  </style>
+</head>
+<body class="bg-[#FBF8F2] text-stone-800 antialiased selection:bg-[#C85A32] selection:text-white">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const STORE_WHATSAPP_NUMBER = "962781578715";
+
+    const PRODUCTS = [
+      {
+        id: 1,
+        name: "صبار الكرة الذهبية المصغر",
+        price: 4.5,
+        desc: "صبار كروي محبوب مع شوك ذهبي ناعم في حوض سيراميك.",
+        image: "https://images.unsplash.com/photo-1512428813834-c702c7702b78?auto=format&fit=crop&w=600&q=80"
+      },
+      {
+        id: 2,
+        name: "صبار التين النجمي (Astrophytum)",
+        price: 6.0,
+        desc: "شكل هندسي رائع شبيه بالنجمة، مثالي للمكاتب وطاولات القهوة.",
+        image: "https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?auto=format&fit=crop&w=600&q=80"
+      },
+      {
+        id: 3,
+        name: "مجموعة ميني كلاسيك (3 قطع)",
+        price: 9.0,
+        desc: "ثلاث صبارات صغيرة متناسقة تضفي بهجة صحراوية هادئة.",
+        image: "https://images.unsplash.com/photo-1509423350716-97f9360b4e09?auto=format&fit=crop&w=600&q=80"
+      },
+      {
+        id: 4,
+        name: "صبار الألوفيرا المخملي",
+        price: 5.0,
+        desc: "أوراق ممتلئة خضراء، تعطي إحساساً بالحيوية وتتحمل قلة العناية.",
+        image: "https://images.unsplash.com/photo-1596547609652-9cf5d8d76921?auto=format&fit=crop&w=600&q=80"
+      }
+    ];
+
+    function App() {
+      const [showIntro, setShowIntro] = useState(true);
+      const [viewCareGuide, setViewCareGuide] = useState(false);
+      const [cart, setCart] = useState([]);
+      const [isCartOpen, setIsCartOpen] = useState(false);
+      const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+      const [orderSuccess, setOrderSuccess] = useState(false);
+      const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [lastAddedId, setLastAddedId] = useState(null);
+
+      const [customer, setCustomer] = useState({
+        name: '',
+        phone: '',
+        email: '',
+        city: '',
+        district: '',
+        street: ''
+      });
+
+      const deliveryFee = 2.0;
+
+      useEffect(() => {
+        const timer = setTimeout(() => setShowIntro(false), 5000);
+        return () => clearTimeout(timer);
+      }, []);
+
+      useEffect(() => {
+        if (window.location.hash === "#care-guide") {
+          setShowIntro(false);
+          setViewCareGuide(true);
+        }
+      }, []);
+
+      const addToCart = (product) => {
+        setCart(prev => {
+          const found = prev.find(item => item.id === product.id);
+          if (found) {
+            return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+          }
+          return [...prev, { ...product, qty: 1 }];
+        });
+
+        setLastAddedId(product.id);
+        setTimeout(() => setLastAddedId(null), 1200);
+      };
+
+      const updateQty = (id, delta) => {
+        setCart(prev =>
+          prev.map(item => {
+            if (item.id === id) {
+              const newQty = item.qty + delta;
+              return newQty > 0 ? { ...item, qty: newQty } : null;
+            }
+            return item;
+          }).filter(Boolean)
+        );
+      };
+
+      const totalItems = cart.reduce((sum, i) => sum + i.qty, 0);
+      const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+      const grandTotal = totalItems > 0 ? subtotal + deliveryFee : 0;
+
+      const handleOrderSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
+        const orderDetails = cart.map(i => `• ${i.name} (العدد: ${i.qty}) - ${(i.price * i.qty).toFixed(2)} د.أ`).join('\n');
+
+        const whatsappMsg = `🌵 *طلب جديد من متجر صَبّارة* 🌵\n\n` +
+          `👤 *الزبون:* ${customer.name}\n` +
+          `📱 *الهاتف:* ${customer.phone}\n` +
+          `📧 *الإيميل:* ${customer.email || 'لم يُحدد'}\n` +
+          `📍 *العنوان:* ${customer.city} - ${customer.district} - ${customer.street}\n\n` +
+          `🛍️ *الطلبات:*\n${orderDetails}\n\n` +
+          `💵 *المجموع الفرعي:* ${subtotal.toFixed(2)} د.أ\n` +
+          `🚚 *التوصيل:* ${deliveryFee.toFixed(2)} د.أ\n` +
+          `💰 *المجموع النهائي المطلوب:* *${grandTotal.toFixed(2)} د.أ*`;
+
+        try {
+          await fetch("https://formspree.io/f/mnpqooky", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({
+              الاسم: customer.name,
+              الهاتف: customer.phone,
+              الإيميل: customer.email,
+              المدينة: customer.city,
+              الحي: customer.district,
+              الشارع: customer.street,
+              الطلبات: orderDetails,
+              المجموع: `${grandTotal.toFixed(2)} د.أ`
+            })
+          });
+        } catch (err) {
+          console.log("إشعار الإيميل");
+        }
+
+        const encodedMsg = encodeURIComponent(whatsappMsg);
+        const whatsappUrl = `https://wa.me/${STORE_WHATSAPP_NUMBER}?text=${encodedMsg}`;
+        window.open(whatsappUrl, '_blank');
+
+        setIsSubmitting(false);
+        setIsCheckoutOpen(false);
+        setOrderSuccess(true);
+        setCart([]);
+      };
+
+      if (showIntro) {
+        return (
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F4EFE6] transition-opacity duration-1000">
+            <div className="relative w-64 h-64 flex flex-col items-center justify-end">
+              <div className="absolute top-10 z-20 animate-flower">
+                <div className="w-5 h-5 bg-rose-400 rounded-full shadow-inner border-2 border-rose-300"></div>
+              </div>
+              <div className="relative z-10 w-28 h-28 bg-emerald-600 rounded-full border-4 border-emerald-700/70 shadow-md animate-cactus flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-y-0 w-8 border-x border-emerald-400/50 rounded-full"></div>
+                <div className="absolute w-1.5 h-1.5 bg-emerald-200 rounded-full top-4 left-6"></div>
+                <div className="absolute w-1.5 h-1.5 bg-emerald-200 rounded-full bottom-5 right-7"></div>
+                <div className="absolute w-1.5 h-1.5 bg-emerald-200 rounded-full top-8 right-5"></div>
+              </div>
+              <div className="relative z-20 -mt-5 flex flex-col items-center animate-pot">
+                <div className="w-36 h-6 bg-[#C85A32] rounded-t-lg border-b-2 border-[#9D4120] shadow-sm"></div>
+                <div className="w-32 h-24 bg-[#B84E27] shadow-lg rounded-b-2xl border-t-2 border-[#9D4120]/40 flex items-center justify-center">
+                  <span className="text-[#F4EFE6]/60 text-xs tracking-widest font-bold">صَبّار</span>
+                </div>
+              </div>
+            </div>
+            <p className="mt-8 text-stone-600 font-medium tracking-wide animate-pulse text-sm">
+              لحظات لنزرع الهدوء بين يديك...
+            </p>
+            <button onClick={() => setShowIntro(false)} className="mt-4 text-xs text-stone-400 underline hover:text-stone-700">
+              تخطي العرض
+            </button>
+          </div>
+        );
+      }
+
+      if (viewCareGuide) {
+        return (
+          <div className="min-h-screen bg-[#FBF8F2] p-4 md:p-12">
+            <div className="max-w-xl mx-auto bg-white rounded-3xl p-6 md:p-8 border border-stone-200 shadow-xl">
+              <button 
+                onClick={() => setViewCareGuide(false)} 
+                className="group flex items-center gap-2 text-stone-600 hover:text-[#C85A32] bg-stone-50 hover:bg-stone-100 px-4 py-2 rounded-xl transition text-sm font-bold mb-6"
+              >
+                <span className="text-lg transition-transform group-hover:-translate-x-1">→</span>
+                <span>الرجوع للمتجر</span>
+              </button>
+              
+              <div className="text-center mb-8">
+                <span className="text-4xl inline-block mb-2 animate-bounce">🌵</span>
+                <h1 className="text-2xl md:text-3xl font-black text-stone-800">أهلاً فيك! كيف تعتني فيي؟</h1>
+                <p className="text-stone-500 text-sm mt-2">مبروك رفيقتك الخضراء الجديدة، إليك 4 خطوات بسيطة لأعيش معك سنين:</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-start gap-4">
+                  <span className="text-2xl">💧</span>
+                  <div>
+                    <h3 className="font-bold text-emerald-950 text-base">الري بحكمة</h3>
+                    <p className="text-xs text-emerald-900 leading-relaxed mt-1">
+                      لا تسقيني إلا لما تتأكد أن التراب جاف تماماً (مرة كل أسبوعين إلى 3 أسابيع تكفي جداً).
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-4">
+                  <span className="text-2xl">☀️</span>
+                  <div>
+                    <h3 className="font-bold text-amber-950 text-base">الشمس والضوء</h3>
+                    <p className="text-xs text-amber-900 leading-relaxed mt-1">
+                      أحب النور الساطع والتهوية! حطني جنب شباك مشمس أو طاولة يوصلها ضوء نهار دافئ.
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 flex items-start gap-4">
+                  <span className="text-2xl">🪴</span>
+                  <div>
+                    <h3 className="font-bold text-stone-900 text-base">القوارة والتصريف</h3>
+                    <p className="text-xs text-stone-600 leading-relaxed mt-1">
+                      تأكد أن القوارة فيها ثقوب تصريف حتى يخرج الماء الزائد وتظل جذوري بصحة ممتازة.
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 flex items-start gap-4">
+                  <span className="text-2xl">❤️</span>
+                  <div>
+                    <h3 className="font-bold text-rose-950 text-base">شوية حُب وصبر</h3>
+                    <p className="text-xs text-rose-900 leading-relaxed mt-1">
+                      أنا نبات صبور جداً، وجودي معك لتذكيرك دائماً بجمال الصبر وهدوء البال.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 text-center border-t border-stone-100 pt-6">
+                <button 
+                  onClick={() => setViewCareGuide(false)} 
+                  className="w-full bg-stone-900 hover:bg-[#C85A32] text-white py-3 rounded-2xl text-xs font-bold transition"
+                >
+                  العودة لتصفح باقي الصبارات
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen flex flex-col justify-between">
+          <header className="sticky top-0 z-40 bg-[#FBF8F2]/90 backdrop-blur-md border-b border-stone-200">
+            <div className="max-w-6xl mx-auto px-4 h-20 flex items-center justify-between">
+              
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#C85A32] text-white flex items-center justify-center text-xl font-black shadow-sm">
+                  🌵
+                </div>
+                <div>
+                  <span className="text-2xl font-black text-stone-900 tracking-tight block leading-none">صَبّارة</span>
+                  <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">Cactus & Calm</span>
+                </div>
+              </div>
+
+              <div className="hidden md:flex items-center gap-8">
+                <nav className="flex items-center gap-6 font-bold text-stone-600 text-sm">
+                  <a href="#products" className="hover:text-[#C85A32] transition">المنتجات</a>
+                  <a href="#contact" className="hover:text-[#C85A32] transition">تواصل معنا</a>
+                  <button onClick={() => setViewCareGuide(true)} className="hover:text-[#C85A32] transition">دليل العناية (QR)</button>
+                </nav>
+                <button 
+                  onClick={() => setIsCartOpen(true)}
+                  className="relative flex items-center gap-2 bg-stone-900 hover:bg-[#C85A32] text-white px-4 py-2.5 rounded-full font-bold text-xs transition shadow-sm"
+                >
+                  <span>السلة</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                  {totalItems > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[11px] w-5 h-5 rounded-full flex items-center justify-center font-extrabold shadow-sm animate-pulse">
+                      {totalItems}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              <div className="flex md:hidden items-center gap-2">
+                <button onClick={() => setIsCartOpen(true)} className="relative p-2.5 bg-stone-100 rounded-full text-stone-800">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                  {totalItems > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                      {totalItems}
+                    </span>
+                  )}
+                </button>
+                <button onClick={() => setIsMobileMenuOpen(true)} className="p-2.5 text-stone-700">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {isMobileMenuOpen && (
+            <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-xs">
+              <div className="w-64 bg-[#FBF8F2] h-full p-6 shadow-2xl flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-center mb-8 border-b border-stone-200 pb-4">
+                    <span className="font-bold text-lg text-stone-900">القائمة</span>
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800">
+                      <span>إغلاق</span>
+                      <span className="text-base">✕</span>
+                    </button>
+                  </div>
+                  <nav className="flex flex-col gap-4 font-bold text-stone-700">
+                    <a href="#products" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-stone-100">المنتجات</a>
+                    <a href="#contact" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-stone-100">تواصل معنا</a>
+                    <button onClick={() => { setIsMobileMenuOpen(false); setViewCareGuide(true); }} className="py-2 text-right text-[#C85A32]">دليل العناية (QR)</button>
+                  </nav>
+                </div>
+                <p className="text-xs text-stone-400 text-center">🌵 متجر صَبّارة الأردن</p>
+              </div>
+            </div>
+          )}
+
+          <section className="max-w-6xl mx-auto px-4 py-12 md:py-16 grid md:grid-cols-2 gap-10 items-center">
+            <div>
+              <span className="inline-block bg-[#EFE7D8] text-[#9D4120] text-xs font-black px-3 py-1.5 rounded-full mb-4">
+                صغير، صامد، ويزيّن يومك
+              </span>
+              <h1 className="text-3xl sm:text-5xl font-extrabold text-stone-900 leading-tight mb-4">
+                أصيص صبار صغير يُعيد لمكتبك رونق الحياة.
+              </h1>
+              <p className="text-stone-600 text-base md:text-lg leading-relaxed mb-6">
+                نباتات صبار منزلية ومكتبية مختارة بعناية، لا تحتاج إلا للقليل من الماء والضوء لتُشعرك بالسكينة كل يوم.
+              </p>
+              <a href="#products" className="inline-block bg-[#C85A32] hover:bg-[#A84520] text-white px-7 py-3.5 rounded-2xl font-bold text-sm shadow-lg hover:shadow-xl transition">
+                اكتشف الصبارات
+              </a>
+            </div>
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-[#C85A32] to-amber-500 rounded-3xl blur opacity-25"></div>
+              <img 
+                src="https://images.unsplash.com/photo-1545241047-6083a3684587?auto=format&fit=crop&w=800&q=80" 
+                alt="نبتات صبار مصغرة" 
+                className="relative w-full h-[320px] md:h-[400px] object-cover rounded-3xl shadow-lg"
+              />
+            </div>
+          </section>
+
+          <section id="products" className="max-w-6xl mx-auto px-4 py-14">
+            <div className="text-center max-w-lg mx-auto mb-12">
+              <h2 className="text-3xl font-extrabold text-stone-900">تشكيلتنا المختارة</h2>
+              <p className="text-stone-500 text-sm mt-2">صبارات بحجم مثالي للطاولات والمكاتب، تأتي بقوارة سيراميك متينة</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {PRODUCTS.map((prod) => {
+                const isRecentlyAdded = lastAddedId === prod.id;
+                return (
+                  <div key={prod.id} className="bg-white rounded-3xl border border-stone-200/80 overflow-hidden shadow-xs hover:shadow-xl transition duration-300 flex flex-col justify-between group">
+                    <div>
+                      <img src={prod.image} alt={prod.name} className="w-full h-52 object-cover group-hover:scale-105 transition duration-500" />
+                      <div className="p-5">
+                        <h3 className="font-bold text-lg text-stone-900 mb-1">{prod.name}</h3>
+                        <p className="text-stone-500 text-xs leading-relaxed mb-3">{prod.desc}</p>
+                      </div>
+                    </div>
+                    <div className="p-5 pt-0 flex items-center justify-between border-t border-stone-100 mt-2">
+                      <div>
+                        <span className="text-xs text-stone-400 block">السعر</span>
+                        <span className="text-lg font-black text-stone-900">{prod.price.toFixed(2)} د.أ</span>
+                      </div>
+                      
+                      <button 
+                        onClick={() => addToCart(prod)} 
+                        className={`text-xs font-bold px-4 py-2.5 rounded-xl transition duration-300 shadow flex items-center gap-1.5 ${
+                          isRecentlyAdded 
+                            ? 'bg-emerald-600 text-white scale-105' 
+                            : 'bg-stone-900 hover:bg-[#C85A32] text-white active:scale-95'
+                        }`}
+                      >
+                        {isRecentlyAdded ? (
+                          <>
+                            <span>✓</span>
+                            <span>تمت الإضافة</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>+</span>
+                            <span>أضف للسلة</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section id="contact" className="max-w-6xl mx-auto px-4 py-14">
+            <div className="bg-[#EFE9DF] rounded-3xl p-8 md:p-12 text-center max-w-3xl mx-auto border border-stone-200/60 shadow-inner">
+              <h2 className="text-2xl md:text-3xl font-black text-stone-800 mb-3">تواصل معنا مباشرة</h2>
+              <p className="text-stone-600 text-sm mb-8">عندك استفسار عن نوع صبار معين، أو بدك توصيل خاص؟ إحنا دايماً بالخدمة!</p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <a href={`https://wa.me/${STORE_WHATSAPP_NUMBER}`} target="_blank" className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-2xl font-bold text-sm shadow transition">
+                  <span>واتساب (WhatsApp)</span>
+                </a>
+                <a href="https://instagram.com" target="_blank" className="flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-90 text-white px-5 py-3 rounded-2xl font-bold text-sm shadow transition">
+                  <span>إنستغرام (Instagram)</span>
+                </a>
+                <a href="https://facebook.com" target="_blank" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-2xl font-bold text-sm shadow transition">
+                  <span>فيسبوك (Facebook)</span>
+                </a>
+              </div>
+            </div>
+          </section>
+
+          {/* سلة المشتريات */}
+          {isCartOpen && (
+            <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-xs">
+              <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col">
+                <div className="p-5 border-b border-stone-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => setIsCartOpen(false)} 
+                      className="p-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-600 transition"
+                      title="متابعة التسوق"
+                    >
+                      →
+                    </button>
+                    <div>
+                      <h3 className="font-extrabold text-lg text-stone-900">سلة التسوق</h3>
+                      <p className="text-xs text-stone-400">{totalItems} قطعة محددة</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setIsCartOpen(false)} className="p-2 text-stone-400 hover:text-stone-700">✕</button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                  {cart.length === 0 ? (
+                    <div className="text-center py-24 text-stone-400">
+                      <span className="text-3xl block mb-2">🌵</span>
+                      <p className="font-bold">السلة فارغة حالياً</p>
+                      <button 
+                        onClick={() => setIsCartOpen(false)}
+                        className="mt-4 text-xs font-bold text-[#C85A32] underline"
+                      >
+                        تصفح المنتجات الآن
+                      </button>
+                    </div>
+                  ) : (
+                    cart.map((item) => (
+                      <div key={item.id} className="flex gap-4 items-center border-b border-stone-100 pb-4">
+                        <img src={item.image} alt={item.name} className="w-16 h-16 rounded-xl object-cover" />
+                        <div className="flex-1">
+                          <h4 className="font-bold text-sm text-stone-800">{item.name}</h4>
+                          <span className="text-xs text-[#C85A32] font-black">{item.price.toFixed(2)} د.أ</span>
+                        </div>
+                        <div className="flex items-center gap-2 border border-stone-200 rounded-lg p-1">
+                          <button onClick={() => updateQty(item.id, -1)} className="px-2 text-stone-500 font-bold">-</button>
+                          <span className="text-xs font-black w-4 text-center">{item.qty}</span>
+                          <button onClick={() => updateQty(item.id, 1)} className="px-2 text-stone-500 font-bold">+</button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {cart.length > 0 && (
+                  <div className="p-5 bg-stone-50 border-t border-stone-100 space-y-2.5">
+                    <div className="flex justify-between text-xs text-stone-500">
+                      <span>المجموع الفرعي:</span>
+                      <span className="font-bold text-stone-700">{subtotal.toFixed(2)} د.أ</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-stone-500">
+                      <span>رسوم التوصيل:</span>
+                      <span className="font-bold text-stone-700">{deliveryFee.toFixed(2)} د.أ</span>
+                    </div>
+                    <div className="border-t border-stone-200 pt-2 flex justify-between items-center text-sm font-black text-stone-900">
+                      <span>المجموع الكلي:</span>
+                      <span className="text-xl text-[#C85A32]">{grandTotal.toFixed(2)} د.أ</span>
+                    </div>
+
+                    <button 
+                      onClick={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }}
+                      className="w-full bg-[#C85A32] hover:bg-[#A84520] text-white py-3.5 rounded-2xl font-bold text-sm shadow-md transition"
+                    >
+                      متابعة الطلب وإدخال العنوان 🚚
+                    </button>
+                    
+                    <button 
+                      onClick={() => setIsCartOpen(false)}
+                      className="w-full text-center text-xs text-stone-500 hover:text-stone-800 py-1"
+                    >
+                      ← متابعة التسوق
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* نافذة العنوان وإتمام الطلب (Checkout Modal) - تم ضبطها بالكامل لتناسب شاشات الموبايل */}
+          {isCheckoutOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-6 overflow-y-auto">
+              <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-stone-200 flex flex-col max-h-[92vh] overflow-hidden my-auto">
+                
+                {/* رأس ثابت (Sticky Header) لا يختفي أبداً وفيه سهم الرجوع وزر الإغلاق */}
+                <div className="p-4 sm:p-5 border-b border-stone-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                  <div className="flex items-center gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => { setIsCheckoutOpen(false); setIsCartOpen(true); }}
+                      className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition"
+                      title="الرجوع للسلة"
+                    >
+                      →
+                    </button>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-black text-stone-900 leading-tight">معلومات التوصيل والطلب</h3>
+                      <p className="text-[11px] text-stone-400">سنرسل تفاصيل طلبك مباشرة للواتساب</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setIsCheckoutOpen(false)} 
+                    className="p-2 text-stone-400 hover:text-stone-700 text-lg leading-none"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* جسم النموذج قابل للتمرير بسلاسة على الموبايل */}
+                <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
+                  <form id="checkout-form" onSubmit={handleOrderSubmit} className="space-y-3.5">
+                    <div>
+                      <label className="block text-xs font-bold text-stone-700 mb-1">الاسم الكامل *</label>
+                      <input 
+                        required 
+                        type="text" 
+                        placeholder="مثال: أحمد خليل" 
+                        value={customer.name} 
+                        onChange={e => setCustomer({...customer, name: e.target.value})}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-[#C85A32]"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-stone-700 mb-1">رقم الهاتف *</label>
+                        <input 
+                          required 
+                          type="tel" 
+                          placeholder="079XXXXXXX" 
+                          value={customer.phone} 
+                          onChange={e => setCustomer({...customer, phone: e.target.value})}
+                          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-[#C85A32]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-stone-700 mb-1">البريد الإلكتروني (اختياري)</label>
+                        <input 
+                          type="email" 
+                          placeholder="email@domain.com" 
+                          value={customer.email} 
+                          onChange={e => setCustomer({...customer, email: e.target.value})}
+                          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-[#C85A32]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-stone-700 mb-1">المدينة / المحافظة *</label>
+                        <input 
+                          required 
+                          type="text" 
+                          placeholder="عَمّان، إربد، الزرقاء..." 
+                          value={customer.city} 
+                          onChange={e => setCustomer({...customer, city: e.target.value})}
+                          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-[#C85A32]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-stone-700 mb-1">الحي / المنطقة *</label>
+                        <input 
+                          required 
+                          type="text" 
+                          placeholder="مثال: الجبيهة، عبدون..." 
+                          value={customer.district} 
+                          onChange={e => setCustomer({...customer, district: e.target.value})}
+                          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-[#C85A32]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-stone-700 mb-1">الشارع وأقرب معلم *</label>
+                      <textarea 
+                        required 
+                        rows="2" 
+                        placeholder="اسم الشارع، رقم البناية أو بجانب معلم معروف..." 
+                        value={customer.street} 
+                        onChange={e => setCustomer({...customer, street: e.target.value})}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-[#C85A32]"
+                      ></textarea>
+                    </div>
+
+                    <div className="bg-[#FAF7F0] p-3.5 rounded-2xl border border-stone-200 text-xs space-y-1.5 text-stone-600">
+                      <div className="flex justify-between">
+                        <span>إجمالي النبتات ({totalItems}):</span>
+                        <span className="font-bold">{subtotal.toFixed(2)} د.أ</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>توصيل لباب بيتك:</span>
+                        <span className="font-bold">2.00 د.أ</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-black text-stone-900 border-t border-stone-200 pt-1.5">
+                        <span>المبلغ المطلوب عند الاستلام:</span>
+                        <span className="text-[#C85A32]">{grandTotal.toFixed(2)} د.أ</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-1 space-y-2">
+                      <button 
+                        disabled={isSubmitting}
+                        type="submit" 
+                        className="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-3.5 rounded-2xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 transition"
+                      >
+                        <span>تأكيد وإرسال عبر واتساب والإيميل 🌵</span>
+                      </button>
+                      
+                      <button 
+                        type="button"
+                        onClick={() => { setIsCheckoutOpen(false); setIsCartOpen(true); }}
+                        className="w-full text-center text-xs text-stone-500 hover:text-stone-800 py-1"
+                      >
+                        ← الرجوع لتعديل السلة
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {orderSuccess && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+              <div className="bg-white w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl border border-stone-200">
+                <span className="text-5xl inline-block mb-3 animate-bounce">🎉</span>
+                <h3 className="text-xl font-black text-stone-900 mb-2">تم تجهيز طلبك بنجاح!</h3>
+                <p className="text-xs text-stone-600 leading-relaxed mb-6">
+                  تم فتح محادثة الواتساب وأُرسلت نسخة بالبريد. اضغط "إرسال" في واتساب لتأكيد الموعد فوراً مع المتجر.
+                </p>
+                <button 
+                  onClick={() => setOrderSuccess(false)}
+                  className="w-full bg-stone-900 hover:bg-stone-800 text-white py-3 rounded-xl font-bold text-xs"
+                >
+                  العودة للمتجر
+                </button>
+              </div>
+            </div>
+          )}
+
+          <footer className="bg-stone-900 text-stone-300 py-12 border-t border-stone-800">
+            <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-right">
+              <div>
+                <span className="text-2xl font-black text-white flex items-center justify-center md:justify-start gap-2">
+                  🌵 صَبّارة
+                </span>
+                <p className="text-stone-400 text-xs mt-2 max-w-sm leading-relaxed">
+                  "يُعلّمنا الصبار أن الجمال الحقيقي يكمن في الصمود والهدوء، حتى في أقسى الظروف."
+                </p>
+              </div>
+              <div className="text-xs text-stone-500">
+                <p>جميع الحقوق محفوظة © متجر صَبّارة</p>
+                <p className="mt-1">صُنع بحب وإتقان من الهاتف مباشرة 📱</p>
+              </div>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
