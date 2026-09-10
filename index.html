@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>متجر شتلة وصَبّارة | فحص النباتات بالذكاء الاصطناعي</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body { font-family: 'Tajawal', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
+    
+    @keyframes growCactus {
+      0% { transform: scale(0) translateY(40px); opacity: 0; }
+      40% { transform: scale(0.6) translateY(20px); opacity: 1; }
+      80% { transform: scale(1.08) translateY(-5px); }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    @keyframes bloomFlower {
+      0%, 70% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes potWiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-2deg); }
+      75% { transform: rotate(2deg); }
+    }
+    @keyframes scannerBar {
+      0% { top: 0%; opacity: 0.8; }
+      50% { top: 90%; opacity: 1; }
+      100% { top: 0%; opacity: 0.8; }
+    }
+    .animate-cactus { animation: growCactus 3.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+    .animate-flower { animation: bloomFlower 4.2s ease-out forwards; }
+    .animate-pot { animation: potWiggle 3.5s ease-in-out; }
+    .animate-scanner { animation: scannerBar 2s infinite ease-in-out; }
+  </style>
+</head>
+<body class="selection:bg-[#C85A32] selection:text-white antialiased">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // المفتاح مدمج ومثبت تلقائياً
+    const GEMINI_API_KEY = "AQ.Ab8RN6K1-0S2-80OxPK7NcuKS_mU0qJ9QTOuG14pBqNTFdkFfQ";
+
+    // البيانات الثابتة المعتمدة لمتجر شتلة وصَبّارة
+    const STORE_WHATSAPP_NUMBER = "962781578715";
+    const FORMSPREE_ENDPOINT = "https://formspree.io/f/mnpqooky";
+    const FACEBOOK_LINK = "https://www.facebook.com/share/1DGg2aX4Mx/";
+
+    const PRODUCTS = [
+      {
+        id: 1,
+        category: "cactus",
+        categoryName: "صبار",
+        name: "صبار الكرة الذهبية المصغر",
+        price: 4.5,
+        desc: "صبار كروي مميز مع شوك ذهبي ناعم في حوض سيراميك.",
+        image: "https://images.unsplash.com/photo-1512428813834-c702c7702b78?auto=format&fit=crop&w=600&q=80"
+      },
+      {
+        id: 2,
+        category: "cactus",
+        categoryName: "صبار",
+        name: "صبار التين النجمي (Astrophytum)",
+        price: 6.0,
+        desc: "شكل هندسي رائع شبيه بالنجمة، مثالي للمكاتب وطاولات القهوة.",
+        image: "https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?auto=format&fit=crop&w=600&q=80"
+      },
+      {
+        id: 3,
+        category: "cactus",
+        categoryName: "صبار",
+        name: "مجموعة ميني كلاسيك (3 قطع)",
+        price: 9.0,
+        desc: "ثلاث صبارات صغيرة متناسقة تضفي بهجة صحراوية هادئة.",
+        image: "https://images.unsplash.com/photo-1509423350716-97f9360b4e09?auto=format&fit=crop&w=600&q=80"
+      },
+      {
+        id: 4,
+        category: "cactus",
+        categoryName: "صبار",
+        name: "صبار الألوفيرا المخملي",
+        price: 5.0,
+        desc: "أوراق ممتلئة خضراء، تعطي إحساساً بالحيوية وتتحمل قلة العناية.",
+        image: "https://images.unsplash.com/photo-1596547609652-9cf5d8d76921?auto=format&fit=crop&w=600&q=80"
+      },
+      {
+        id: 5,
+        category: "plant",
+        categoryName: "شتلة",
+        name: "شتلة البوثوس الذهبي (قلب عبد الوهاب)",
+        price: 5.5,
+        desc: "شتلة متدلية محبوبة ومنقية للهواء، تنمو بسرعة وتناسب كل الغرف.",
+        image: "https://images.unsplash.com/photo-1614594975525-e45190c55d0b?auto=format&fit=crop&w=600&q=80"
+      },
+      {
+        id: 6,
+        category: "plant",
+        categoryName: "شتلة",
+        name: "شتلة مونستيرا ميني (قفص صدري)",
+        price: 8.0,
+        desc: "أوراق استوائية بتفاصيل مميزة، تعطي ركناً فخماً وأنيقاً لبيتك.",
+        image: "https://images.unsplash.com/photo-1617173944883-6ffbd35d584d?auto=format&fit=crop&w=600&q=80"
+      },
+      {
+        id: 7,
+        category: "plant",
+        categoryName: "شتلة",
+        name: "شتلة الزاميا المقاومة (ZZ Plant)",
+        price: 7.5,
+        desc: "أوراق خضراء لامعة جداً، من أسهل النباتات الداخلية تحملاً للظلال.",
+        image: "https://images.unsplash.com/photo-1632207691143-643e2a9a9361?auto=format&fit=crop&w=600&q=80"
+      },
+      {
+        id: 8,
+        category: "plant",
+        categoryName: "شتلة",
+        name: "شتلة السانسيفيريا (جلد النمر)",
+        price: 6.5,
+        desc: "شتلة عمودية أنيقة تضفي طابعاً عصرياً وتعمل كفلتر طبيعي للأكسجين.",
+        image: "https://images.unsplash.com/photo-1593482892290-f54927ae1bf6?auto=format&fit=crop&w=600&q=80"
+      }
+    ];
+
+    function App() {
+      const [showIntro, setShowIntro] = useState(true);
+      const [viewCareGuide, setViewCareGuide] = useState(false);
+      const [viewAiDoctor, setViewAiDoctor] = useState(false);
+      
+      const [cart, setCart] = useState([]);
+      const [isCartOpen, setIsCartOpen] = useState(false);
+      const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+      const [orderSuccess, setOrderSuccess] = useState(false);
+      const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [lastAddedId, setLastAddedId] = useState(null);
+      const [selectedCategory, setSelectedCategory] = useState("all");
+
+      const [uploadedImage, setUploadedImage] = useState(null);
+      const [isAnalyzing, setIsAnalyzing] = useState(false);
+      const [aiResult, setAiResult] = useState(null);
+      const [aiError, setAiError] = useState(null);
+
+      const [isDarkMode, setIsDarkMode] = useState(() => {
+        return localStorage.getItem('sabbara_theme') === 'dark';
+      });
+
+      const toggleTheme = () => {
+        setIsDarkMode(prev => {
+          const next = !prev;
+          localStorage.setItem('sabbara_theme', next ? 'dark' : 'light');
+          return next;
+        });
+      };
+
+      const [customer, setCustomer] = useState({
+        name: '',
+        phone: '',
+        email: '',
+        city: '',
+        district: '',
+        street: ''
+      });
+
+      const deliveryFee = 2.0;
+
+      useEffect(() => {
+        const timer = setTimeout(() => setShowIntro(false), 5000);
+        return () => clearTimeout(timer);
+      }, []);
+
+      const addToCart = (product) => {
+        setCart(prev => {
+          const found = prev.find(item => item.id === product.id);
+          if (found) {
+            return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+          }
+          return [...prev, { ...product, qty: 1 }];
+        });
+
+        setLastAddedId(product.id);
+        setTimeout(() => setLastAddedId(null), 1200);
+      };
+
+      const updateQty = (id, delta) => {
+        setCart(prev =>
+          prev.map(item => {
+            if (item.id === id) {
+              const newQty = item.qty + delta;
+              return newQty > 0 ? { ...item, qty: newQty } : null;
+            }
+            return item;
+          }).filter(Boolean)
+        );
+      };
+
+      const totalItems = cart.reduce((sum, i) => sum + i.qty, 0);
+      const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+      const grandTotal = totalItems > 0 ? subtotal + deliveryFee : 0;
+
+      const handleOrderSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
+        const orderDetails = cart.map(i => `• [${i.categoryName}] ${i.name} (العدد: ${i.qty}) - ${(i.price * i.qty).toFixed(2)} د.أ`).join('\n');
+
+        const payload = {
+          متجر: "شتلة وصَبّارة",
+          اسم_الزبون: customer.name,
+          رقم_الهاتف: customer.phone,
+          البريد_الإلكتروني: customer.email || "غير محدد",
+          المدينة_المحافظة: customer.city,
+          الحي_المنطقة: customer.district,
+          تفاصيل_الشارع_والمعلم: customer.street,
+          الطلبات: orderDetails,
+          المجموع_الفرعي: `${subtotal.toFixed(2)} د.أ`,
+          رسوم_التوصيل: `${deliveryFee.toFixed(2)} د.أ`,
+          المجموع_الإجمالي_المطلوب: `${grandTotal.toFixed(2)} د.أ`
+        };
+
+        try {
+          await fetch(FORMSPREE_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify(payload)
+          });
+        } catch (err) {
+          console.error("خطأ أثناء الإرسال", err);
+        }
+
+        setIsSubmitting(false);
+        setIsCheckoutOpen(false);
+        setOrderSuccess(true);
+        setCart([]);
+      };
+
+      // فحص الصورة مباشرة عبر Gemini
+      const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const type = file.type || "image/jpeg";
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result;
+            setUploadedImage(dataUrl);
+            const base64Content = dataUrl.split(',')[1];
+            setAiResult(null);
+            setAiError(null);
+            analyzePlantWithGemini(base64Content, type);
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
+      const analyzePlantWithGemini = async (base64, type) => {
+        setIsAnalyzing(true);
+        setAiError(null);
+
+        const promptText = `
+أنت خبير زراعي متخصص في نباتات الزينة والصبار لمتجر 'شتلة وصَبّارة'.
+قم بتحليل هذه الصورة بدقة واستخرج الآتي بصيغة JSON فقط دون أي كود Markdown إضافي:
+{
+  "plant_name": "اسم النبتة التقديري بالعربي",
+  "status_title": "عنوان موجز لحالة النبتة أو المشكلة (مثال: إفراط بالري، جفاف، نقص ضوء، ممتازة وصحية)",
+  "health_rating": "النسبة الصحية المئوية مثل 85%",
+  "symptoms": "وصف دقيق للأعراض الملاحظة على الأوراق والسيقان والتربة",
+  "solution": "خطة علاج ونقاط عملية محددة لتحسين حالتها"
+}
+`;
+
+        try {
+          const cleanKey = GEMINI_API_KEY.trim();
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanKey}`, {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "x-goog-api-key": cleanKey
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: promptText },
+                  { inline_data: { mime_type: type, data: base64 } }
+                ]
+              }]
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`تعذر التحليل (${response.status}). يرجى التأكد من جودة الصورة والتقاط صورة واضحة.`);
+          }
+
+          const data = await response.json();
+          let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          
+          if (!rawText) {
+            throw new Error("لم يتمكن الذكاء الاصطناعي من قراءة النبتة بوضوح. جرب التقاط صورة أقرب للأوراق.");
+          }
+
+          rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(rawText);
+          setAiResult(parsed);
+        } catch (err) {
+          console.error(err);
+          setAiError(err.message || "حدث خطأ أثناء فحص الصورة. يرجى تجربة صورة أوضح ومضاءة جيداً.");
+        } finally {
+          setIsAnalyzing(false);
+        }
+      };
+
+      const resetAiDoctor = () => {
+        setUploadedImage(null);
+        setAiResult(null);
+        setAiError(null);
+        setIsAnalyzing(false);
+      };
+
+      const filteredProducts = selectedCategory === "all" 
+        ? PRODUCTS 
+        : PRODUCTS.filter(p => p.category === selectedCategory);
+
+      // 1. شاشة البداية
+      if (showIntro) {
+        return (
+          <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-colors duration-500 ${isDarkMode ? 'bg-[#181715] text-stone-200' : 'bg-[#F4EFE6] text-stone-800'}`}>
+            <div className="relative w-64 h-64 flex flex-col items-center justify-end">
+              <div className="absolute top-10 z-20 animate-flower">
+                <div className="w-5 h-5 bg-rose-400 rounded-full shadow-inner border-2 border-rose-300"></div>
+              </div>
+              <div className="relative z-10 w-28 h-28 bg-emerald-600 rounded-full border-4 border-emerald-700/70 shadow-md animate-cactus flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-y-0 w-8 border-x border-emerald-400/50 rounded-full"></div>
+                <div className="absolute w-1.5 h-1.5 bg-emerald-200 rounded-full top-4 left-6"></div>
+                <div className="absolute w-1.5 h-1.5 bg-emerald-200 rounded-full bottom-5 right-7"></div>
+                <div className="absolute w-1.5 h-1.5 bg-emerald-200 rounded-full top-8 right-5"></div>
+              </div>
+              <div className="relative z-20 -mt-5 flex flex-col items-center animate-pot">
+                <div className="w-36 h-6 bg-[#C85A32] rounded-t-lg border-b-2 border-[#9D4120] shadow-sm"></div>
+                <div className="w-32 h-24 bg-[#B84E27] shadow-lg rounded-b-2xl border-t-2 border-[#9D4120]/40 flex items-center justify-center">
+                  <span className="text-[#F4EFE6] text-[11px] tracking-wider font-bold">شتلة & صَبّارة</span>
+                </div>
+              </div>
+            </div>
+            <p className={`mt-8 font-medium tracking-wide animate-pulse text-sm ${isDarkMode ? 'text-stone-400' : 'text-stone-600'}`}>
+              لحظات لنزرع الخضار والهدوء بين يديك...
+            </p>
+            <button onClick={() => setShowIntro(false)} className="mt-4 text-xs text-stone-400 underline hover:text-[#C85A32]">
+              تخطي العرض
+            </button>
+          </div>
+        );
+      }
+
+      // 2. صفحة طبيب النباتات بالذكاء الاصطناعي (مباشرة وبسيطة)
+      if (viewAiDoctor) {
+        return (
+          <div className={`min-h-screen p-4 md:p-12 transition-colors duration-300 ${isDarkMode ? 'bg-[#121212] text-stone-100' : 'bg-[#FBF8F2] text-stone-800'}`}>
+            <div className={`max-w-2xl mx-auto rounded-3xl p-6 md:p-8 border shadow-xl transition-colors duration-300 ${isDarkMode ? 'bg-[#1C1A17] border-stone-800' : 'bg-white border-stone-200'}`}>
+              
+              <div className="flex justify-between items-center mb-6">
+                <button 
+                  onClick={() => { setViewAiDoctor(false); resetAiDoctor(); }} 
+                  className={`group flex items-center gap-2 px-4 py-2 rounded-xl transition text-sm font-bold ${isDarkMode ? 'bg-stone-800 text-stone-300 hover:text-white' : 'bg-stone-50 text-stone-600 hover:text-[#C85A32]'}`}
+                >
+                  <span className="text-lg transition-transform group-hover:-translate-x-1">→</span>
+                  <span>الرجوع للمتجر</span>
+                </button>
+                <button 
+                  onClick={toggleTheme} 
+                  className={`p-2 rounded-xl border text-base transition ${isDarkMode ? 'bg-stone-800 border-stone-700 text-amber-300' : 'bg-stone-100 border-stone-200 text-stone-700'}`}
+                >
+                  {isDarkMode ? '☀️' : '🌙'}
+                </button>
+              </div>
+
+              <div className="text-center mb-8">
+                <span className="inline-block p-3 rounded-2xl bg-emerald-500/10 text-emerald-500 text-3xl mb-2">🤖🪴</span>
+                <h1 className={`text-2xl sm:text-3xl font-black ${isDarkMode ? 'text-white' : 'text-stone-900'}`}>طبيب النباتات الذكي (AI)</h1>
+                <p className={`text-xs sm:text-sm mt-2 max-w-md mx-auto leading-relaxed ${isDarkMode ? 'text-stone-400' : 'text-stone-500'}`}>
+                  صوّر نبتتك أو صبارتك، وسيقوم الذكاء الاصطناعي فوراً بالتعرف عليها وتشخيص حالتها وإرشادك لأفضل طريقة علاجية!
+                </p>
+              </div>
+
+              {/* صندوق التقاط ورفع الصورة */}
+              {!uploadedImage && (
+                <div className={`border-2 border-dashed rounded-3xl p-10 text-center transition ${isDarkMode ? 'border-stone-700 bg-stone-800/30' : 'border-stone-300 bg-stone-50/50'}`}>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    capture="environment"
+                    id="plant-photo" 
+                    onChange={handleImageUpload}
+                    className="hidden" 
+                  />
+                  <label htmlFor="plant-photo" className="cursor-pointer flex flex-col items-center justify-center gap-3">
+                    <div className="w-16 h-16 rounded-full bg-emerald-700 text-white flex items-center justify-center text-2xl shadow-lg hover:scale-105 transition">
+                      📷
+                    </div>
+                    <div>
+                      <span className="font-extrabold text-sm block">اضغط هنا لتصوير نبتتك أو اختيار صورة</span>
+                      <span className="text-[11px] text-stone-400 mt-1 block">فحص فوري ودقيق عبر كاميرا هاتفك</span>
+                    </div>
+                  </label>
+                </div>
+              )}
+
+              {/* المعاينة والتحليل المباشر */}
+              {uploadedImage && (
+                <div className="space-y-6">
+                  <div className="relative rounded-2xl overflow-hidden max-h-72 w-full bg-black/50 border border-stone-700 flex items-center justify-center">
+                    <img src={uploadedImage} alt="Plant Analysis" className="w-full h-full object-cover" />
+                    
+                    {isAnalyzing && (
+                      <div className="absolute inset-0 bg-emerald-500/10 pointer-events-none">
+                        <div className="absolute w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_15px_#10b981] animate-scanner"></div>
+                      </div>
+                    )}
+                  </div>
+
+                  {isAnalyzing && (
+                    <div className="text-center py-4 space-y-2">
+                      <div className="inline-block animate-spin text-2xl">🌱</div>
+                      <h3 className="font-bold text-sm">جاري الفحص المباشر بواسطة الذكاء الاصطناعي...</h3>
+                      <p className="text-xs text-stone-400">تحليل حالة الأنسجة • كشف الرطوبة والآفات • تجهيز خطة العلاج</p>
+                    </div>
+                  )}
+
+                  {aiError && (
+                    <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs leading-relaxed text-center">
+                      <span className="font-bold block mb-1">تنبيه:</span>
+                      {aiError}
+                      <button 
+                        onClick={resetAiDoctor}
+                        className="mt-3 block mx-auto underline text-xs font-bold text-stone-400 hover:text-stone-200"
+                      >
+                        تجربة صورة أخرى
+                      </button>
+                    </div>
+                  )}
+
+                  {aiResult && (
+                    <div className={`p-5 rounded-2xl border space-y-4 animate-in fade-in zoom-in duration-300 ${isDarkMode ? 'bg-stone-800/60 border-stone-700' : 'bg-stone-50 border-stone-200'}`}>
+                      <div className="flex items-center justify-between border-b pb-3 border-stone-200 dark:border-stone-700">
+                        <div>
+                          <span className="text-[10px] text-emerald-500 font-bold block">
+                            {aiResult.plant_name || "النبتة المفحوصة"}
+                          </span>
+                          <h3 className="font-black text-lg text-emerald-600 dark:text-emerald-400">{aiResult.status_title}</h3>
+                        </div>
+                        <span className="text-xs bg-emerald-500/10 text-emerald-500 font-bold px-3 py-1 rounded-full border border-emerald-500/20">
+                          الصحة: {aiResult.health_rating}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="text-xs font-bold mb-1 text-stone-400">الأعراض المرصودة:</h4>
+                        <p className="text-xs leading-relaxed">{aiResult.symptoms}</p>
+                      </div>
+
+                      <div className={`p-3.5 rounded-xl border ${isDarkMode ? 'bg-emerald-950/20 border-emerald-900/40 text-emerald-200' : 'bg-emerald-50 border-emerald-100 text-emerald-950'}`}>
+                        <h4 className="text-xs font-extrabold flex items-center gap-1.5 mb-1 text-emerald-600 dark:text-emerald-400">
+                          <span>💊</span>
+                          <span>خطة العلاج المقترحة:</span>
+                        </h4>
+                        <p className="text-xs leading-relaxed">{aiResult.solution}</p>
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                        <button 
+                          onClick={resetAiDoctor} 
+                          className="flex-1 bg-stone-900 hover:bg-[#C85A32] text-white py-3 rounded-xl font-bold text-xs transition"
+                        >
+                          🔄 فحص نبتة أخرى
+                        </button>
+                        <a 
+                          href={`https://wa.me/${STORE_WHATSAPP_NUMBER}?text=${encodeURIComponent(`مرحباً متجر شتلة وصَبّارة، قمت بفحص نبتتي (${aiResult.plant_name || ''}) وظهرت المشكلة: ${aiResult.status_title}. وأريد استشارتكم.`)}`}
+                          target="_blank" 
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-1.5 transition"
+                        >
+                          <span>استشارة خبير</span>
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // 3. صفحة الـ QR
+      if (viewCareGuide) {
+        return (
+          <div className={`min-h-screen p-4 md:p-12 transition-colors duration-300 ${isDarkMode ? 'bg-[#121212] text-stone-100' : 'bg-[#FBF8F2] text-stone-800'}`}>
+            <div className={`max-w-xl mx-auto rounded-3xl p-6 md:p-8 border shadow-xl transition-colors duration-300 ${isDarkMode ? 'bg-[#1C1A17] border-stone-800' : 'bg-white border-stone-200'}`}>
+              <div className="flex justify-between items-center mb-6">
+                <button 
+                  onClick={() => setViewCareGuide(false)} 
+                  className={`group flex items-center gap-2 px-4 py-2 rounded-xl transition text-sm font-bold ${isDarkMode ? 'bg-stone-800 text-stone-300 hover:text-white' : 'bg-stone-50 text-stone-600 hover:text-[#C85A32]'}`}
+                >
+                  <span className="text-lg transition-transform group-hover:-translate-x-1">→</span>
+                  <span>الرجوع للمتجر</span>
+                </button>
+                <button 
+                  onClick={toggleTheme} 
+                  className={`p-2 rounded-xl border text-base transition ${isDarkMode ? 'bg-stone-800 border-stone-700 text-amber-300' : 'bg-stone-100 border-stone-200 text-stone-700'}`}
+                >
+                  {isDarkMode ? '☀️' : '🌙'}
+                </button>
+              </div>
+              
+              <div className="text-center mb-8">
+                <span className="text-4xl inline-block mb-2 animate-bounce">🪴</span>
+                <h1 className={`text-2xl md:text-3xl font-black ${isDarkMode ? 'text-white' : 'text-stone-800'}`}>أهلاً فيك! كيف تعتني برفيقتك؟</h1>
+                <p className={`text-sm mt-2 ${isDarkMode ? 'text-stone-400' : 'text-stone-500'}`}>سواء اخترت صَبّارة صامدة أو شتلة خضراء منعشة، إليك الدليل المبسط:</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className={`p-4 rounded-2xl border flex items-start gap-4 ${isDarkMode ? 'bg-emerald-950/30 border-emerald-900/50' : 'bg-emerald-50 border-emerald-100'}`}>
+                  <span className="text-2xl">🌵</span>
+                  <div>
+                    <h3 className={`font-bold text-base ${isDarkMode ? 'text-emerald-300' : 'text-emerald-950'}`}>عناية الصبار</h3>
+                    <p className={`text-xs leading-relaxed mt-1 ${isDarkMode ? 'text-emerald-200/80' : 'text-emerald-900'}`}>
+                      يحب الشمس المباشرة والري المتباعد جداً (كل 2 - 3 أسابيع). اتركه يجف تماماً قبل سقايته من جديد.
+                    </p>
+                  </div>
+                </div>
+                <div className={`p-4 rounded-2xl border flex items-start gap-4 ${isDarkMode ? 'bg-amber-950/30 border-amber-900/50' : 'bg-amber-50 border-amber-100'}`}>
+                  <span className="text-2xl">🪴</span>
+                  <div>
+                    <h3 className={`font-bold text-base ${isDarkMode ? 'text-amber-300' : 'text-amber-950'}`}>عناية الشتلات المنزلية</h3>
+                    <p className={`text-xs leading-relaxed mt-1 ${isDarkMode ? 'text-amber-200/80' : 'text-amber-900'}`}>
+                      تفضل الضوء الساطع غير المباشر، والري المعتدل عندما يجف أول 2 سم من سطح التربة.
+                    </p>
+                  </div>
+                </div>
+                <div className={`p-4 rounded-2xl border flex items-start gap-4 ${isDarkMode ? 'bg-stone-800/60 border-stone-700' : 'bg-stone-50 border-stone-200'}`}>
+                  <span className="text-2xl">💧</span>
+                  <div>
+                    <h3 className={`font-bold text-base ${isDarkMode ? 'text-stone-200' : 'text-stone-900'}`}>قاعدة التصريف الذهبية</h3>
+                    <p className={`text-xs leading-relaxed mt-1 ${isDarkMode ? 'text-stone-400' : 'text-stone-600'}`}>
+                      تأكد دائماً من تصريف المياه الزائدة من أسفل القوارة للحفاظ على صحة الجذور ونشاطها.
+                    </p>
+                  </div>
+                </div>
+                <div className={`p-4 rounded-2xl border flex items-start gap-4 ${isDarkMode ? 'bg-rose-950/30 border-rose-900/50' : 'bg-rose-50 border-rose-100'}`}>
+                  <span className="text-2xl">❤️</span>
+                  <div>
+                    <h3 className={`font-bold text-base ${isDarkMode ? 'text-rose-300' : 'text-rose-950'}`}>طاقة وهدوء في بيتك</h3>
+                    <p className={`text-xs leading-relaxed mt-1 ${isDarkMode ? 'text-rose-200/80' : 'text-rose-900'}`}>
+                      النباتات كائنات حية تتجاوب مع اهتمامك، تمنح المكان روحاً وتجدد النفسية يومياً.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`mt-8 text-center border-t pt-6 ${isDarkMode ? 'border-stone-800' : 'border-stone-100'}`}>
+                <button 
+                  onClick={() => setViewCareGuide(false)} 
+                  className="w-full bg-[#C85A32] hover:bg-[#A84520] text-white py-3 rounded-2xl text-xs font-bold transition shadow-md"
+                >
+                  العودة لتصفح باقي النباتات
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // 4. الصفحة الرئيسية
+      return (
+        <div className={`min-h-screen flex flex-col justify-between transition-colors duration-300 ${isDarkMode ? 'bg-[#141311] text-stone-200' : 'bg-[#FBF8F2] text-stone-800'}`}>
+          <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors duration-300 ${isDarkMode ? 'bg-[#141311]/90 border-stone-800' : 'bg-[#FBF8F2]/90 border-stone-200'}`}>
+            <div className="max-w-6xl mx-auto px-4 h-20 flex items-center justify-between">
+              
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#C85A32] text-white flex items-center justify-center text-lg font-black shadow-sm">
+                  🪴
+                </div>
+                <div>
+                  <span className={`text-xl sm:text-2xl font-black tracking-tight block leading-none ${isDarkMode ? 'text-white' : 'text-stone-900'}`}>شتلة وصَبّارة</span>
+                  <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">Plants & Cacti</span>
+                </div>
+              </div>
+
+              <div className="hidden md:flex items-center gap-6">
+                <nav className={`flex items-center gap-6 font-bold text-sm ${isDarkMode ? 'text-stone-300' : 'text-stone-600'}`}>
+                  <a href="#products" className="hover:text-[#C85A32] transition">المتجر</a>
+                  <button 
+                    onClick={() => setViewAiDoctor(true)} 
+                    className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-extrabold hover:opacity-80 transition"
+                  >
+                    <span>🤖</span>
+                    <span>طبيب النباتات (AI)</span>
+                  </button>
+                  <a href="#contact" className="hover:text-[#C85A32] transition">تواصل معنا</a>
+                  <button onClick={() => setViewCareGuide(true)} className="hover:text-[#C85A32] transition">دليل العناية (QR)</button>
+                </nav>
+
+                <button 
+                  onClick={toggleTheme} 
+                  className={`p-2 rounded-xl border text-sm transition ${isDarkMode ? 'bg-stone-800 border-stone-700 text-amber-300 hover:bg-stone-700' : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-100'}`}
+                  title={isDarkMode ? 'التبديل للوضع الفاتح' : 'التبديل للوضع الليلي'}
+                >
+                  {isDarkMode ? '☀️' : '🌙'}
+                </button>
+
+                <button 
+                  onClick={() => setIsCartOpen(true)}
+                  className="relative flex items-center gap-2 bg-[#C85A32] hover:bg-[#A84520] text-white px-4 py-2.5 rounded-full font-bold text-xs transition shadow-sm"
+                >
+                  <span>السلة</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                  {totalItems > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-white text-[#C85A32] text-[11px] w-5 h-5 rounded-full flex items-center justify-center font-extrabold shadow-sm animate-pulse">
+                      {totalItems}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              <div className="flex md:hidden items-center gap-2">
+                <button 
+                  onClick={toggleTheme} 
+                  className={`p-2 rounded-full border text-xs transition ${isDarkMode ? 'bg-stone-800 border-stone-700 text-amber-300' : 'bg-white border-stone-200 text-stone-700'}`}
+                >
+                  {isDarkMode ? '☀️' : '🌙'}
+                </button>
+
+                <button onClick={() => setIsCartOpen(true)} className={`relative p-2.5 rounded-full ${isDarkMode ? 'bg-stone-800 text-white' : 'bg-stone-100 text-stone-800'}`}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                  {totalItems > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-[#C85A32] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                      {totalItems}
+                    </span>
+                  )}
+                </button>
+                <button onClick={() => setIsMobileMenuOpen(true)} className={`p-2.5 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`}>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {isMobileMenuOpen && (
+            <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs">
+              <div className={`w-64 h-full p-6 shadow-2xl flex flex-col justify-between transition-colors duration-300 ${isDarkMode ? 'bg-[#1C1A17] text-stone-200' : 'bg-[#FBF8F2] text-stone-800'}`}>
+                <div>
+                  <div className={`flex justify-between items-center mb-8 border-b pb-4 ${isDarkMode ? 'border-stone-800' : 'border-stone-200'}`}>
+                    <span className="font-bold text-lg">القائمة</span>
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-1 text-xs text-stone-400 hover:text-white">
+                      <span>إغلاق</span>
+                      <span className="text-base">✕</span>
+                    </button>
+                  </div>
+                  <nav className="flex flex-col gap-4 font-bold">
+                    <a href="#products" onClick={() => setIsMobileMenuOpen(false)} className={`py-2 border-b ${isDarkMode ? 'border-stone-800/60' : 'border-stone-100'}`}>المتجر</a>
+                    
+                    <button 
+                      onClick={() => { setIsMobileMenuOpen(false); setViewAiDoctor(true); }} 
+                      className="py-2 text-right text-emerald-600 dark:text-emerald-400 flex items-center gap-2"
+                    >
+                      <span>🤖</span>
+                      <span>طبيب النباتات (AI)</span>
+                    </button>
+
+                    <a href="#contact" onClick={() => setIsMobileMenuOpen(false)} className={`py-2 border-b ${isDarkMode ? 'border-stone-800/60' : 'border-stone-100'}`}>تواصل معنا</a>
+                    <button onClick={() => { setIsMobileMenuOpen(false); setViewCareGuide(true); }} className="py-2 text-right text-[#C85A32]">دليل العناية (QR)</button>
+                  </nav>
+                </div>
+                <p className="text-xs text-stone-400 text-center">🌿 متجر شتلة وصَبّارة</p>
+              </div>
+            </div>
+          )}
+
+          {/* الهيرو */}
+          <section className="max-w-6xl mx-auto px-4 py-12 md:py-16 grid md:grid-cols-2 gap-10 items-center">
+            <div>
+              <span className={`inline-block text-xs font-black px-3 py-1.5 rounded-full mb-4 ${isDarkMode ? 'bg-stone-800 text-[#E07A5F]' : 'bg-[#EFE7D8] text-[#9D4120]'}`}>
+                جمال الشتلات الطبيعية وصمود الصبار
+              </span>
+              <h1 className={`text-3xl sm:text-5xl font-extrabold leading-tight mb-4 ${isDarkMode ? 'text-white' : 'text-stone-900'}`}>
+                شتلة خضراء وصبارة أنيقة تُنير زوايا بيتك ومكتبك.
+              </h1>
+              <p className={`text-base md:text-lg leading-relaxed mb-6 ${isDarkMode ? 'text-stone-300' : 'text-stone-600'}`}>
+                اختر ما يناسب مساحتك من شتلات داخلية منعشة أو صبارات مكتبية صبورة، منسقة في قوارات أنيقة وجاهزة لتمنحك الراحة النفسية.
+              </p>
+              
+              <div className="flex flex-wrap gap-3">
+                <a href="#products" onClick={() => setSelectedCategory("plant")} className="bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-3 rounded-2xl font-bold text-xs shadow-md transition">
+                  🪴 تصفح الشتلات
+                </a>
+                <a href="#products" onClick={() => setSelectedCategory("cactus")} className="bg-[#C85A32] hover:bg-[#A84520] text-white px-5 py-3 rounded-2xl font-bold text-xs shadow-md transition">
+                  🌵 تصفح الصبار
+                </a>
+                <button 
+                  onClick={() => setViewAiDoctor(true)} 
+                  className="bg-stone-900 hover:bg-stone-800 dark:bg-stone-800 dark:hover:bg-stone-700 text-white border border-emerald-500/30 px-5 py-3 rounded-2xl font-bold text-xs shadow-md transition flex items-center gap-1.5"
+                >
+                  <span>🤖</span>
+                  <span>طبيب الـ AI</span>
+                </button>
+              </div>
+            </div>
+            
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 to-[#C85A32] rounded-3xl blur opacity-25"></div>
+              <img 
+                src="https://images.unsplash.com/photo-1463936575829-25148e1db1b8?auto=format&fit=crop&w=800&q=80" 
+                alt="شتلات وصبارات" 
+                className="relative w-full h-[320px] md:h-[400px] object-cover rounded-3xl shadow-lg"
+              />
+            </div>
+          </section>
+
+          {/* المنتجات مع الفلتر */}
+          <section id="products" className="max-w-6xl mx-auto px-4 py-14">
+            <div className="text-center max-w-lg mx-auto mb-8">
+              <h2 className={`text-3xl font-extrabold ${isDarkMode ? 'text-white' : 'text-stone-900'}`}>مجموعتنا المختارة</h2>
+              <p className={`text-sm mt-2 ${isDarkMode ? 'text-stone-400' : 'text-stone-500'}`}>اختر بين شتلاتنا الداخلية الخضراء أو صباراتنا الصامدة</p>
+            </div>
+
+            <div className="flex justify-center items-center gap-2 mb-10">
+              <button 
+                onClick={() => setSelectedCategory("all")}
+                className={`px-5 py-2.5 rounded-full text-xs font-bold transition shadow-xs ${
+                  selectedCategory === "all" 
+                    ? 'bg-stone-900 text-white dark:bg-white dark:text-stone-900' 
+                    : isDarkMode ? 'bg-stone-800 text-stone-300' : 'bg-stone-100 text-stone-600'
+                }`}
+              >
+                الكل ({PRODUCTS.length})
+              </button>
+              <button 
+                onClick={() => setSelectedCategory("plant")}
+                className={`px-5 py-2.5 rounded-full text-xs font-bold transition shadow-xs flex items-center gap-1.5 ${
+                  selectedCategory === "plant" 
+                    ? 'bg-emerald-700 text-white' 
+                    : isDarkMode ? 'bg-stone-800 text-stone-300 hover:text-emerald-400' : 'bg-stone-100 text-stone-600 hover:text-emerald-800'
+                }`}
+              >
+                <span>🪴</span>
+                <span>قسم الشتلات</span>
+              </button>
+              <button 
+                onClick={() => setSelectedCategory("cactus")}
+                className={`px-5 py-2.5 rounded-full text-xs font-bold transition shadow-xs flex items-center gap-1.5 ${
+                  selectedCategory === "cactus" 
+                    ? 'bg-[#C85A32] text-white' 
+                    : isDarkMode ? 'bg-stone-800 text-stone-300 hover:text-orange-400' : 'bg-stone-100 text-stone-600 hover:text-[#C85A32]'
+                }`}
+              >
+                <span>🌵</span>
+                <span>قسم الصبار</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {filteredProducts.map((prod) => {
+                const isRecentlyAdded = lastAddedId === prod.id;
+                return (
+                  <div key={prod.id} className={`rounded-3xl border overflow-hidden shadow-xs hover:shadow-xl transition duration-300 flex flex-col justify-between group ${isDarkMode ? 'bg-[#1C1A17] border-stone-800' : 'bg-white border-stone-200/80'}`}>
+                    <div className="relative">
+                      <img src={prod.image} alt={prod.name} className="w-full h-52 object-cover group-hover:scale-105 transition duration-500" />
+                      <span className={`absolute top-3 right-3 text-[10px] font-black px-2.5 py-1 rounded-full backdrop-blur-md shadow-xs ${
+                        prod.category === 'plant' 
+                          ? 'bg-emerald-900/80 text-emerald-200' 
+                          : 'bg-[#C85A32]/90 text-white'
+                      }`}>
+                        {prod.category === 'plant' ? '🪴 شتلة' : '🌵 صبار'}
+                      </span>
+                      <div className="p-5">
+                        <h3 className={`font-bold text-lg mb-1 ${isDarkMode ? 'text-white' : 'text-stone-900'}`}>{prod.name}</h3>
+                        <p className={`text-xs leading-relaxed mb-3 ${isDarkMode ? 'text-stone-400' : 'text-stone-500'}`}>{prod.desc}</p>
+                      </div>
+                    </div>
+                    <div className={`p-5 pt-0 flex items-center justify-between border-t mt-2 ${isDarkMode ? 'border-stone-800' : 'border-stone-100'}`}>
+                      <div>
+                        <span className="text-xs text-stone-400 block">السعر</span>
+                        <span className={`text-lg font-black ${isDarkMode ? 'text-stone-100' : 'text-stone-900'}`}>{prod.price.toFixed(2)} د.أ</span>
+                      </div>
+                      
+                      <button 
+                        onClick={() => addToCart(prod)} 
+                        className={`text-xs font-bold px-4 py-2.5 rounded-xl transition duration-300 shadow flex items-center gap-1.5 ${
+                          isRecentlyAdded 
+                            ? 'bg-emerald-600 text-white scale-105' 
+                            : isDarkMode 
+                              ? 'bg-[#C85A32] hover:bg-[#A84520] text-white active:scale-95' 
+                              : 'bg-stone-900 hover:bg-[#C85A32] text-white active:scale-95'
+                        }`}
+                      >
+                        {isRecentlyAdded ? (
+                          <>
+                            <span>✓</span>
+                            <span>تمت الإضافة</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>+</span>
+                            <span>أضف للسلة</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* تواصل معنا */}
+          <section id="contact" className="max-w-6xl mx-auto px-4 py-14">
+            <div className={`rounded-3xl p-8 md:p-12 text-center max-w-3xl mx-auto border transition-colors duration-300 ${isDarkMode ? 'bg-[#1C1A17] border-stone-800' : 'bg-[#EFE9DF] border-stone-200/60 shadow-inner'}`}>
+              <h2 className={`text-2xl md:text-3xl font-black mb-3 ${isDarkMode ? 'text-white' : 'text-stone-800'}`}>تواصل معنا مباشرة</h2>
+              <p className={`text-sm mb-8 ${isDarkMode ? 'text-stone-300' : 'text-stone-600'}`}>عندك استفسار عن نوع شتلة، رعاية نبتة معينة، أو توصيل خاص؟ إحنا بالخدمة!</p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <a href={`https://wa.me/${STORE_WHATSAPP_NUMBER}`} target="_blank" className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-2xl font-bold text-sm shadow transition">
+                  <span>واتساب (WhatsApp)</span>
+                </a>
+                <a href="https://instagram.com" target="_blank" className="flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-90 text-white px-5 py-3 rounded-2xl font-bold text-sm shadow transition">
+                  <span>إنستغرام (Instagram)</span>
+                </a>
+                <a href={FACEBOOK_LINK} target="_blank" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-2xl font-bold text-sm shadow transition">
+                  <span>فيسبوك (Facebook)</span>
+                </a>
+              </div>
+            </div>
+          </section>
+
+          {/* سلة المشتريات */}
+          {isCartOpen && (
+            <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs">
+              <div className={`w-full max-w-md h-full shadow-2xl flex flex-col transition-colors duration-300 ${isDarkMode ? 'bg-[#1A1816] text-stone-200' : 'bg-white text-stone-800'}`}>
+                <div className={`p-5 border-b flex items-center justify-between ${isDarkMode ? 'border-stone-800' : 'border-stone-100'}`}>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => setIsCartOpen(false)} 
+                      className={`p-1.5 rounded-lg transition ${isDarkMode ? 'bg-stone-800 text-stone-300 hover:bg-stone-700' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+                      title="متابعة التسوق"
+                    >
+                      →
+                    </button>
+                    <div>
+                      <h3 className={`font-extrabold text-lg ${isDarkMode ? 'text-white' : 'text-stone-900'}`}>سلة التسوق</h3>
+                      <p className="text-xs text-stone-400">{totalItems} قطعة محددة</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setIsCartOpen(false)} className="p-2 text-stone-400 hover:text-stone-200">✕</button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                  {cart.length === 0 ? (
+                    <div className="text-center py-24 text-stone-400">
+                      <span className="text-3xl block mb-2">🪴</span>
+                      <p className="font-bold">السلة فارغة حالياً</p>
+                      <button 
+                        onClick={() => setIsCartOpen(false)}
+                        className="mt-4 text-xs font-bold text-[#C85A32] underline"
+                      >
+                        تصفح الشتلات والصبار الآن
+                      </button>
+                    </div>
+                  ) : (
+                    cart.map((item) => (
+                      <div key={item.id} className={`flex gap-4 items-center border-b pb-4 ${isDarkMode ? 'border-stone-800' : 'border-stone-100'}`}>
+                        <img src={item.image} alt={item.name} className="w-16 h-16 rounded-xl object-cover" />
+                        <div className="flex-1">
+                          <span className="text-[10px] text-stone-400 block">{item.categoryName}</span>
+                          <h4 className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-stone-800'}`}>{item.name}</h4>
+                          <span className="text-xs text-[#C85A32] font-black">{item.price.toFixed(2)} د.أ</span>
+                        </div>
+                        <div className={`flex items-center gap-2 border rounded-lg p-1 ${isDarkMode ? 'border-stone-700 bg-stone-800' : 'border-stone-200 bg-white'}`}>
+                          <button onClick={() => updateQty(item.id, -1)} className="px-2 text-stone-400 hover:text-white font-bold">-</button>
+                          <span className="text-xs font-black w-4 text-center">{item.qty}</span>
+                          <button onClick={() => updateQty(item.id, 1)} className="px-2 text-stone-400 hover:text-white font-bold">+</button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {cart.length > 0 && (
+                  <div className={`p-5 border-t space-y-2.5 ${isDarkMode ? 'bg-[#151412] border-stone-800' : 'bg-stone-50 border-stone-100'}`}>
+                    <div className="flex justify-between text-xs text-stone-400">
+                      <span>المجموع الفرعي:</span>
+                      <span className={`font-bold ${isDarkMode ? 'text-stone-200' : 'text-stone-700'}`}>{subtotal.toFixed(2)} د.أ</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-stone-400">
+                      <span>رسوم التوصيل:</span>
+                      <span className={`font-bold ${isDarkMode ? 'text-stone-200' : 'text-stone-700'}`}>{deliveryFee.toFixed(2)} د.أ</span>
+                    </div>
+                    <div className={`border-t pt-2 flex justify-between items-center text-sm font-black ${isDarkMode ? 'border-stone-800 text-white' : 'border-stone-200 text-stone-900'}`}>
+                      <span>المجموع الكلي:</span>
+                      <span className="text-xl text-[#C85A32]">{grandTotal.toFixed(2)} د.أ</span>
+                    </div>
+
+                    <button 
+                      onClick={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }}
+                      className="w-full bg-[#C85A32] hover:bg-[#A84520] text-white py-3.5 rounded-2xl font-bold text-sm shadow-md transition"
+                    >
+                      متابعة الطلب وإدخال العنوان 🚚
+                    </button>
+                    
+                    <button 
+                      onClick={() => setIsCartOpen(false)}
+                      className="w-full text-center text-xs text-stone-400 hover:text-stone-200 py-1"
+                    >
+                      ← متابعة التسوق
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* نافذة العنوان وإتمام الطلب */}
+          {isCheckoutOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-6 overflow-y-auto">
+              <div className={`w-full max-w-lg rounded-3xl shadow-2xl border flex flex-col max-h-[92vh] overflow-hidden my-auto transition-colors duration-300 ${isDarkMode ? 'bg-[#1C1A17] border-stone-800 text-stone-200' : 'bg-white border-stone-200 text-stone-800'}`}>
+                
+                <div className={`p-4 sm:p-5 border-b flex justify-between items-center sticky top-0 z-10 ${isDarkMode ? 'bg-[#1C1A17] border-stone-800' : 'bg-white border-stone-100'}`}>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => { setIsCheckoutOpen(false); setIsCartOpen(true); }}
+                      className={`p-2 rounded-xl transition ${isDarkMode ? 'bg-stone-800 text-stone-300 hover:bg-stone-700' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}
+                      title="الرجوع للسلة"
+                    >
+                      →
+                    </button>
+                    <div>
+                      <h3 className={`text-base sm:text-lg font-black leading-tight ${isDarkMode ? 'text-white' : 'text-stone-900'}`}>معلومات التوصيل والطلب</h3>
+                      <p className="text-[11px] text-stone-400">سنقوم بتجهيز نباتاتك والتواصل معك لتأكيد التوصيل</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setIsCheckoutOpen(false)} 
+                    className="p-2 text-stone-400 hover:text-white text-lg leading-none"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
+                  <form onSubmit={handleOrderSubmit} className="space-y-3.5">
+                    <div>
+                      <label className={`block text-xs font-bold mb-1 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`}>الاسم الكامل *</label>
+                      <input 
+                        required 
+                        type="text" 
+                        placeholder="مثال: أحمد خليل" 
+                        value={customer.name} 
+                        onChange={e => setCustomer({...customer, name: e.target.value})}
+                        className={`w-full p-3 border rounded-xl text-sm focus:outline-none focus:border-[#C85A32] ${isDarkMode ? 'bg-stone-800/80 border-stone-700 text-white placeholder-stone-500' : 'bg-stone-50 border-stone-200 text-stone-900'}`}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className={`block text-xs font-bold mb-1 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`}>رقم الهاتف للتواصل *</label>
+                        <input 
+                          required 
+                          type="tel" 
+                          placeholder="078XXXXXXX" 
+                          value={customer.phone} 
+                          onChange={e => setCustomer({...customer, phone: e.target.value})}
+                          className={`w-full p-3 border rounded-xl text-sm focus:outline-none focus:border-[#C85A32] ${isDarkMode ? 'bg-stone-800/80 border-stone-700 text-white placeholder-stone-500' : 'bg-stone-50 border-stone-200 text-stone-900'}`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-bold mb-1 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`}>البريد الإلكتروني (اختياري)</label>
+                        <input 
+                          type="email" 
+                          placeholder="email@domain.com" 
+                          value={customer.email} 
+                          onChange={e => setCustomer({...customer, email: e.target.value})}
+                          className={`w-full p-3 border rounded-xl text-sm focus:outline-none focus:border-[#C85A32] ${isDarkMode ? 'bg-stone-800/80 border-stone-700 text-white placeholder-stone-500' : 'bg-stone-50 border-stone-200 text-stone-900'}`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className={`block text-xs font-bold mb-1 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`}>المدينة / المحافظة *</label>
+                        <input 
+                          required 
+                          type="text" 
+                          placeholder="عَمّان، إربد، الزرقاء..." 
+                          value={customer.city} 
+                          onChange={e => setCustomer({...customer, city: e.target.value})}
+                          className={`w-full p-3 border rounded-xl text-sm focus:outline-none focus:border-[#C85A32] ${isDarkMode ? 'bg-stone-800/80 border-stone-700 text-white placeholder-stone-500' : 'bg-stone-50 border-stone-200 text-stone-900'}`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-bold mb-1 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`}>الحي / المنطقة *</label>
+                        <input 
+                          required 
+                          type="text" 
+                          placeholder="مثال: الجبيهة، عبدون..." 
+                          value={customer.district} 
+                          onChange={e => setCustomer({...customer, district: e.target.value})}
+                          className={`w-full p-3 border rounded-xl text-sm focus:outline-none focus:border-[#C85A32] ${isDarkMode ? 'bg-stone-800/80 border-stone-700 text-white placeholder-stone-500' : 'bg-stone-50 border-stone-200 text-stone-900'}`}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={`block text-xs font-bold mb-1 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`}>الشارع وأقرب معلم *</label>
+                      <textarea 
+                        required 
+                        rows="2" 
+                        placeholder="اسم الشارع، رقم البناية أو بجانب معلم معروف..." 
+                        value={customer.street} 
+                        onChange={e => setCustomer({...customer, street: e.target.value})}
+                        className={`w-full p-3 border rounded-xl text-sm focus:outline-none focus:border-[#C85A32] ${isDarkMode ? 'bg-stone-800/80 border-stone-700 text-white placeholder-stone-500' : 'bg-stone-50 border-stone-200 text-stone-900'}`}
+                      ></textarea>
+                    </div>
+
+                    <div className={`p-3.5 rounded-2xl border text-xs space-y-1.5 ${isDarkMode ? 'bg-stone-800/50 border-stone-700 text-stone-300' : 'bg-[#FAF7F0] border-stone-200 text-stone-600'}`}>
+                      <div className="flex justify-between">
+                        <span>إجمالي الأصناف ({totalItems}):</span>
+                        <span className="font-bold">{subtotal.toFixed(2)} د.أ</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>توصيل لباب بيتك:</span>
+                        <span className="font-bold">2.00 د.أ</span>
+                      </div>
+                      <div className={`flex justify-between text-sm font-black border-t pt-1.5 ${isDarkMode ? 'border-stone-700 text-white' : 'border-stone-200 text-stone-900'}`}>
+                        <span>المبلغ المطلوب عند الاستلام:</span>
+                        <span className="text-[#C85A32]">{grandTotal.toFixed(2)} د.أ</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-1 space-y-2">
+                      <button 
+                        disabled={isSubmitting}
+                        type="submit" 
+                        className="w-full bg-[#C85A32] hover:bg-[#A84520] text-white py-3.5 rounded-2xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 transition"
+                      >
+                        <span>{isSubmitting ? "جاري إرسال الطلب..." : "تأكيد وإرسال الطلب 🌿"}</span>
+                      </button>
+                      
+                      <button 
+                        type="button"
+                        onClick={() => { setIsCheckoutOpen(false); setIsCartOpen(true); }}
+                        className="w-full text-center text-xs text-stone-400 hover:text-stone-200 py-1"
+                      >
+                        ← الرجوع لتعديل السلة
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* نافذة التأكيد */}
+          {orderSuccess && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+              <div className={`w-full max-w-sm rounded-3xl p-7 text-center shadow-2xl border animate-in fade-in zoom-in duration-300 ${isDarkMode ? 'bg-[#1C1A17] border-stone-800' : 'bg-white border-stone-200'}`}>
+                <div className="w-16 h-16 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 font-bold">
+                  ✓
+                </div>
+                <h3 className={`text-xl font-black mb-2 ${isDarkMode ? 'text-white' : 'text-stone-900'}`}>تم استلام طلبك بنجاح! 🎉</h3>
+                <p className={`text-xs leading-relaxed mb-6 ${isDarkMode ? 'text-stone-300' : 'text-stone-600'}`}>
+                  شكراً لثقتك بمتجر <strong className="text-[#C85A32]">شتلة وصَبّارة</strong>. تم استلام تفاصيل طلبك وعنوانك بنجاح، وسنقوم بالتواصل معك قريباً لتأكيد موعد التوصيل 🌿
+                </p>
+                <button 
+                  onClick={() => setOrderSuccess(false)}
+                  className="w-full bg-[#C85A32] hover:bg-[#A84520] text-white py-3 rounded-xl font-bold text-xs transition shadow-md"
+                >
+                  العودة للمتجر
+                </button>
+              </div>
+            </div>
+          )}
+
+          <footer className="bg-stone-950 text-stone-300 py-12 border-t border-stone-800">
+            <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-right">
+              <div>
+                <span className="text-2xl font-black text-white flex items-center justify-center md:justify-start gap-2">
+                  🪴 شتلة وصَبّارة
+                </span>
+                <p className="text-stone-400 text-xs mt-2 max-w-sm leading-relaxed">
+                  "نجمع لك بين نضارة الشتلات الطبيعية وصمود الصبار الهادئ، لنصنع لمساحتك رونقاً خاصاً."
+                </p>
+              </div>
+              <div className="text-xs text-stone-500">
+                <p>جميع الحقوق محفوظة © متجر شتلة وصَبّارة</p>
+                <p className="mt-1">صُنع بحب وإتقان من الهاتف مباشرة 📱</p>
+              </div>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
